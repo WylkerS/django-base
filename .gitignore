@@ -1,0 +1,8 @@
+.venv*/
+.env
+/static/
+/staticfiles/
+/media/
+src/apps/theme/static/css/dist/
+__pycache__/
+*.pyc
