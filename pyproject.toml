@@ -1,0 +1,30 @@
+[project]
+name = "projeto-base"
+version = "0.1.0"
+description = "Projeto base Django (Docker, PostgreSQL, Celery, Tailwind/DaisyUI) para sistemas internos"
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django (==5.2)",
+    "python-dotenv (>=1.2.3,<2.0.0)",
+    "celery (>=5.6.3,<6.0.0)",
+    "redis (>=8.1.0,<9.0.0)",
+    "django-celery-beat (>=2.9.0,<3.0.0)",
+    "flower (>=2.1.0,<3.0.0)",
+    "django-tailwind (>=4.5.0,<5.0.0)",
+    "psycopg[binary] (>=3.3.5,<4.0.0)",
+    "gunicorn (>=26.2.0,<27.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
