@@ -1,0 +1,115 @@
+# Ambiente de desenvolvimento: runserver com autoreload, Tailwind em watch, Celery worker e beat.
+# Nome do projeto, imagem e portas vêm do .env (COMPOSE_PROJECT_NAME, APP_IMAGE, APP_PORT...).
+
+x-django-service: &django-service
+  build:
+    context: .
+  image: ${APP_IMAGE:-projeto-base}:dev
+  working_dir: /app/src
+  env_file:
+    - .env
+  volumes:
+    - .:/app
+
+x-celery-service: &celery-service
+  <<: *django-service
+  init: true
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:17
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    <<: *django-service
+    command: python manage.py migrate --noinput
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  tailwind:
+    image: node:22-slim
+    working_dir: /app/src/apps/theme/static_src
+    init: true
+    command: sh -c "npm ci && npm run dev"
+    volumes:
+      - .:/app
+      - frontend_node_modules_dev:/app/src/apps/theme/static_src/node_modules
+      - tailwind_css_dev:/app/src/apps/theme/static/css/dist
+
+  django-web:
+    <<: *django-service
+    init: true
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "${APP_PORT:-8001}:8000"
+    volumes:
+      - .:/app
+      - tailwind_css_dev:/app/src/apps/theme/static/css/dist:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      tailwind:
+        condition: service_started
+
+  celery-worker:
+    <<: *celery-service
+    command: celery -A config worker -l info -Q celery
+
+  celery-worker-rpa:
+    <<: *celery-service
+    command: celery -A config worker -l info -Q rpa --concurrency=1
+    profiles:
+      - celery
+
+  celery-beat:
+    <<: *celery-service
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  flower:
+    <<: *celery-service
+    command: celery -A config flower --port=5555 --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD}
+    profiles:
+      - celery
+    ports:
+      - "127.0.0.1:${FLOWER_PORT:-5555}:5555"
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  frontend_node_modules_dev:
+  tailwind_css_dev:
