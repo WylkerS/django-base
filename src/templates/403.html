@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block titulo %}Acesso negado{% endblock %}
+
+{% block content %}
+<section class="card bg-base-100 border border-base-300 shadow-xs w-full max-w-xl mx-auto" aria-labelledby="titulo-acesso-negado">
+    <div class="card-body p-8 sm:p-10 items-center gap-4 text-center">
+        <span class="size-14 rounded-full badge-soft badge-error flex items-center justify-center">
+            <svg class="size-7" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m5.7 5.7 12.6 12.6" />
+            </svg>
+        </span>
+        <div class="flex flex-col gap-1.5">
+            <p class="font-mono text-sm font-semibold text-base-content/70">403</p>
+            <h1 id="titulo-acesso-negado" class="text-2xl font-bold">Acesso não autorizado</h1>
+            <p class="text-sm text-base-content/70">Você não tem permissão para acessar esta página. Se precisar desse acesso, fale com a equipe gestora do sistema.</p>
+        </div>
+        <a href="{% url 'home' %}" class="btn btn-primary">Voltar ao início</a>
+    </div>
+</section>
+{% endblock %}

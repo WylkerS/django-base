@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block titulo %}Início{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-1.5">
+    <h1 class="text-2xl font-bold">{{ app_nome }}</h1>
+    <p class="text-sm text-base-content/70">Página inicial do projeto base. Substitua pelo painel ou pelos atalhos do sistema.</p>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <section class="card bg-base-100 border border-base-300 shadow-xs">
+        <div class="card-body gap-2">
+            <h2 class="card-title text-base">Primeiros passos</h2>
+            <p class="text-sm text-base-content/70">Siga o checklist "Iniciar um projeto a partir do base" no README.</p>
+        </div>
+    </section>
+
+    {% if user.is_authenticated %}
+        <section class="card bg-base-100 border border-base-300 shadow-xs">
+            <div class="card-body gap-2">
+                <h2 class="card-title text-base">Sessão</h2>
+                <p class="text-sm text-base-content/70">Você está autenticado{% if usuario_e_gestor %} e faz parte da equipe gestora{% endif %}.</p>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if usuario_e_gestor %}
+        <section class="card bg-base-100 border border-base-300 shadow-xs">
+            <div class="card-body gap-2">
+                <h2 class="card-title text-base">Administração</h2>
+                <p class="text-sm text-base-content/70">Setores, cargos, usuários e tarefas agendadas.</p>
+                <div class="card-actions">
+                    <a href="{% url 'admin:index' %}" class="btn btn-primary btn-sm">Abrir o admin</a>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

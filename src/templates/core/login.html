@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block titulo %}Entrar{% endblock %}
+
+{% block body_class %}min-h-screen bg-base-200 text-base-content font-sans antialiased{% endblock %}
+
+{% block corpo %}
+<div class="min-h-screen grid lg:grid-cols-2">
+    <section class="hidden lg:flex flex-col justify-between bg-secondary text-secondary-content px-20 py-16">
+        <div class="flex items-center gap-3">
+            <span class="size-10 rounded-field bg-base-100 text-primary flex items-center justify-center shrink-0 font-bold uppercase">{{ app_nome|slice:":1" }}</span>
+            <strong class="text-base font-semibold">{{ app_nome }}</strong>
+        </div>
+
+        {% block login_chamada %}
+        <div class="flex flex-col gap-5 max-w-[480px]">
+            <h1 class="text-4xl font-bold text-balance">{{ app_nome }}</h1>
+            <p class="text-base text-secondary-content/80">Substitua esta chamada pela proposta do sistema.</p>
+        </div>
+        {% endblock %}
+
+        <span></span>
+    </section>
+
+    <section class="flex flex-col items-center justify-center gap-8 p-4 py-10 sm:p-6 lg:p-12">
+        <div class="flex items-center gap-3 lg:hidden">
+            <span class="size-10 rounded-field bg-secondary text-secondary-content flex items-center justify-center shrink-0 font-bold uppercase">{{ app_nome|slice:":1" }}</span>
+            <strong class="text-base font-semibold">{{ app_nome }}</strong>
+        </div>
+
+        <form method="post" class="card w-full max-w-[400px] bg-base-100 border border-base-300 shadow-xs">
+            <div class="card-body p-6 sm:p-9 gap-5">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ proximo }}">
+
+                <div class="flex flex-col gap-1.5">
+                    <h2 class="text-2xl font-bold">Entrar</h2>
+                    <p class="text-sm text-base-content/70">Use seu e-mail e senha.</p>
+                </div>
+
+                {% if erro %}
+                    <div role="alert" class="alert alert-error alert-soft text-sm">
+                        <svg class="size-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="m5.7 5.7 12.6 12.6" />
+                        </svg>
+                        <span>{{ erro }}</span>
+                    </div>
+                {% endif %}
+
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[13px] font-semibold">E-mail</span>
+                    <input type="text" name="email" value="{{ email }}" class="input w-full {% if erro %}input-error{% endif %}" autocomplete="username" autofocus required>
+                </label>
+
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[13px] font-semibold">Senha</span>
+                    <input type="password" name="password" class="input w-full {% if erro %}input-error{% endif %}" autocomplete="current-password" required>
+                </label>
+
+                <button type="submit" class="btn btn-primary w-full h-11">Entrar</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
