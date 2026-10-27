@@ -1,10 +1,10 @@
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, SimpleTestCase
 from django.views.defaults import permission_denied
 
 
-class Template403Tests(TestCase):
+class Template403Tests(SimpleTestCase):
     def test_acesso_negado_usa_o_template_do_projeto(self):
         request = RequestFactory().get("/area-da-gestao/")
         request.user = AnonymousUser()
