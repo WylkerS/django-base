@@ -14,7 +14,8 @@
 
 ## Desenvolvimento
 
-- [Fluxo local com Docker Compose](desenvolvimento/fluxo-local.md) — ambiente de desenvolvimento, comandos frequentes, como adicionar uma nova área.
+- [Fluxo local com Docker Compose](desenvolvimento/fluxo-local.md) — ambiente de desenvolvimento, atalhos do `Makefile`, comandos frequentes, como adicionar uma nova área.
+- [Testes automatizados](desenvolvimento/testes.md) — camadas `unit`/`integration`/`e2e`, helpers compartilhados, `make test` e Bandit em ambiente isolado.
 - [Dependências Python com Poetry](desenvolvimento/dependencias-poetry.md).
 - [Migrations versionadas](desenvolvimento/migrations.md).
 

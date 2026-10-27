@@ -17,7 +17,7 @@ O `celery-worker` (fila `celery`) e o `celery-beat` sobem junto com o restante. 
 docker compose -f docker-compose.dev.yml --profile celery up --build
 ```
 
-O worker e o beat não têm autoreload: depois de alterar uma task ou um service chamado por ela, reinicie-os com `docker compose -f docker-compose.dev.yml restart celery-worker celery-beat`.
+O worker e o beat não têm autoreload: depois de alterar uma task ou um service chamado por ela, reinicie-os com `docker compose -f docker-compose.dev.yml restart celery-worker celery-beat` (ou `make restart`).
 
 O compose de desenvolvimento utiliza diretamente o arquivo `.env`. Para funcionar dentro da rede Docker, confirme especialmente:
 
@@ -30,6 +30,30 @@ POSTGRES_PORT=5432
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
+
+## Atalhos do Makefile
+
+O `Makefile` da raiz encurta os comandos do Compose. Execute-os no host (exige `make` e um shell POSIX, como o Git Bash no Windows); `make` sem argumentos lista todos:
+
+| Comando | Equivale a |
+| --- | --- |
+| `make up` | `docker compose -f docker-compose.dev.yml --profile celery up --build` |
+| `make up-min` | `docker compose -f docker-compose.dev.yml up --build` (sem worker `rpa` e Flower) |
+| `make down` | encerra o ambiente mantendo os volumes |
+| `make restart` | reinicia Tailwind, Django, workers, Beat e Flower sem repetir migrations |
+| `make ps` / `make logs` / `make logs-app` / `make logs-celery` | estado e logs dos containers |
+| `make check` | `manage.py check` no `django-web` |
+| `make makemigrations` / `make migrate` | aceitam `APP_LABEL=<app>` para filtrar |
+| `make migrations-check` | `makemigrations --check --dry-run` |
+| `make createsuperuser` / `make shell` | comandos interativos no `django-web` |
+| `make test` / `make test-unit` / `make test-integration` / `make test-e2e` | suíte em ambiente isolado; `TEST_TARGET=tests.<app>` filtra |
+| `make bandit` | análise de segurança do Python |
+| `make tailwind-build` | build de produção do CSS em container descartável |
+| `make poetry-check` | `poetry check --lock` no host |
+| `make compose-check` | `config --quiet` dos três arquivos Compose |
+| `make validate` | Compose, Poetry, check, migrations, suíte e build do Tailwind |
+
+Os comandos `check`, `migrate`, `makemigrations`, `migrations-check`, `createsuperuser` e `shell` usam `exec` e exigem o ambiente de desenvolvimento em execução; `test`, `bandit` e `tailwind-build` não. Ao acrescentar um serviço contínuo ao `docker-compose.dev.yml`, inclua-o em `APP_SERVICES` (ou `CELERY_SERVICES`) no `Makefile`.
 
 ## Serviços do compose de desenvolvimento
 
@@ -77,10 +101,27 @@ docker compose -f docker-compose.dev.yml exec django-web python /app/scripts/uti
 
 # Abrir o shell Django dentro do container
 docker compose -f docker-compose.dev.yml exec django-web python manage.py shell
-
-# Rodar os testes dentro do container
-docker compose -f docker-compose.dev.yml exec django-web python manage.py test
 ```
+
+## Testes
+
+A suíte usa um Compose exclusivo (`docker-compose.test.yml`), com PostgreSQL temporário, e não exige que o ambiente de desenvolvimento esteja ativo:
+
+```bash
+# Suíte completa
+make test
+
+# Por camada
+make test-unit
+make test-integration
+make test-e2e
+
+# Por app ou por app e camada
+make test TEST_TARGET=tests.core
+make test TEST_TARGET=tests.core.unit
+```
+
+Os testes ficam em `src/tests/<app>/{unit,integration,e2e}/`. Consulte o guia de [testes automatizados](testes.md) para escolher a camada, o tipo de caso Django e os filtros de execução.
 
 ## Frontend
 
@@ -98,13 +139,15 @@ O serviço `tailwind` executa `npm ci` ao iniciar e mantém o watcher (`npm run 
 
 ```bash
 docker compose -f docker-compose.dev.yml run --rm --no-deps tailwind sh -c "npm ci && npm run build"
+# ou
+make tailwind-build
 ```
 
 ## Adicionar uma nova área
 
 1. Crie o app em `src/apps/<nome>/` com `apps.py` (`name = "apps.<nome>"`), `__init__.py` e os pacotes `models/`, `admin/`, `selectors/`, `services/`, `views/` e `migrations/` (com `__init__.py`); registre-o em `INSTALLED_APPS` como `apps.<nome>.apps.<Nome>Config`.
 2. Crie `urls.py` com `app_name = "<nome>"` e inclua-o em `src/config/urls.py`.
-3. Coloque os templates em `src/templates/<nome>/` e os testes em `src/tests/<nome>/test_*.py` (com `__init__.py`).
+3. Coloque os templates em `src/templates/<nome>/` e os testes em `src/tests/<nome>/{unit,integration,e2e}/test_*.py` (cada pasta com `__init__.py`; ver [testes automatizados](testes.md)).
 4. Decida o papel de acesso: área de gestão → proteja views, APIs e exportações com `@gestor_requerido` (`src/apps/core/decorators.py`); área de usuário comum → `@login_required`, com validação de dono em `selectors/`/`services/` quando aplicável.
 5. Adicione a navegação em `src/templates/base.html` (blocos `nav_itens` e `nav_itens_mobile`), usando `usuario_e_gestor` para mostrar/ocultar itens de gestão, e registre o namespace em `SECOES_POR_NAMESPACE` (`src/apps/core/processadores_contexto.py`) para destacar o item ativo.
 6. Atualize a home, se for o caso.

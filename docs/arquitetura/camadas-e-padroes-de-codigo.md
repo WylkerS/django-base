@@ -149,15 +149,23 @@ Use `django.core.exceptions.ValidationError` para erros de validação de negóc
 - **Services e selectors**: testar isoladamente, sem cliente HTTP — chamar a função diretamente, montar o cenário com o ORM, verificar o resultado/estado final.
 - **Views**: testar só o "encaixe" — permissão exigida (`@gestor_requerido`/`@login_required`), status code, redirect esperado, contexto básico do template. Não reteste a regra de negócio já coberta no teste do service.
 
-Os testes ficam fora dos apps, em `src/tests/<app>/`; rode um app isolado com `manage.py test tests.<app>`:
+Os testes ficam fora dos apps, em `src/tests/<app>/`, separados por camada; rode um app isolado com `make test TEST_TARGET=tests.<app>`:
 
 ```
 src/tests/<app>/
     __init__.py
-    test_services_<dominio>.py
-    test_selectors_<dominio>.py
-    test_views_<dominio>.py
+    unit/                          # regras puras, sem banco (SimpleTestCase)
+        __init__.py
+    integration/                   # ORM, services, selectors e views (TestCase)
+        __init__.py
+        test_services_<dominio>.py
+        test_selectors_<dominio>.py
+        test_views_<dominio>.py
+    e2e/                           # live server e navegador real
+        __init__.py
 ```
+
+Detalhes de camadas, helpers (`tests._apoio`) e execução em [Testes automatizados](../desenvolvimento/testes.md).
 
 ## 9. Nomenclatura geral
 

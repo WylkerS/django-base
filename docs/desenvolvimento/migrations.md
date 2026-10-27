@@ -23,10 +23,19 @@ docker compose -f docker-compose.dev.yml exec django-web python manage.py makemi
 # Aplicar a cadeia no PostgreSQL de desenvolvimento
 docker compose -f docker-compose.dev.yml exec django-web python manage.py migrate
 
-# Validar o projeto e a suíte
+# Validar o projeto
 docker compose -f docker-compose.dev.yml exec django-web python manage.py check
-docker compose -f docker-compose.dev.yml exec django-web python manage.py test
 ```
+
+Depois, execute a suíte no ambiente isolado, a partir do host:
+
+```bash
+make test
+```
+
+O `make test` usa o Compose efêmero e um PostgreSQL vazio. O runner aplica toda a cadeia versionada, deixa o Django criar e remover o banco lógico de testes e, ao terminar, o Makefile remove o container e os volumes temporários. Esse ciclo valida migrations sem alterar o PostgreSQL de desenvolvimento.
+
+Os atalhos `make makemigrations`, `make migrations-check` e `make migrate` (com `APP_LABEL=<app>` opcional) equivalem aos comandos acima.
 
 Revise o arquivo gerado e confirme que ele contém somente as operações esperadas. Migrations de dados precisam ser deliberadas e revisadas.
 
@@ -36,10 +45,10 @@ Os apps são importados como `apps.<nome>`, mas preservam labels Django simples.
 
 Até existir uma CI, execute manualmente no ambiente Docker:
 
-1. `makemigrations --check --dry-run`, que não deve detectar alterações;
-2. `migrate --noinput`, aplicando toda a cadeia;
-3. `manage.py check`;
-4. a suíte completa com `manage.py test --noinput`.
+1. `makemigrations --check --dry-run` (`make migrations-check`), que não deve detectar alterações;
+2. `migrate --noinput`, aplicando toda a cadeia (a suíte `make test` também faz isso em PostgreSQL descartável);
+3. `manage.py check` (`make check`);
+4. a suíte completa com `make test`.
 
 ## Produção
 

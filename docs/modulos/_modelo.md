@@ -33,4 +33,4 @@ Telas em `src/templates/<app>/` e os componentes do catálogo que usam.
 
 ## Testes
 
-Arquivos em `src/tests/<app>/` e o que cobrem.
+Arquivos em `src/tests/<app>/{unit,integration,e2e}/` e o que cobrem.

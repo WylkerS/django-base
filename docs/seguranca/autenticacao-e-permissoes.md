@@ -30,7 +30,7 @@ Superusuários são sempre gestores, mesmo sem `Cargo` cadastrado.
 
 A checagem é feita por `src/apps/core/selectors/permissoes.py::usuario_e_gestor(user)`, consultado pelo decorator `src/apps/core/decorators.py::gestor_requerido`. Não há lista de setores hardcoded: quem é a equipe gestora é definido marcando `gestor_sistema=True` no(s) `Setor`(es) corretos, via `/admin/`.
 
-Se o projeto precisar de mais papéis, siga o mesmo desenho: um campo/relacionamento em dados, um selector `usuario_e_<papel>` e um decorator `<papel>_requerido`, com testes equivalentes aos de `src/tests/core/`.
+Se o projeto precisar de mais papéis, siga o mesmo desenho: um campo/relacionamento em dados, um selector `usuario_e_<papel>` e um decorator `<papel>_requerido`, com testes equivalentes aos de `src/tests/core/integration/` (os helpers `criar_gestor` e `criar_usuario_com_setor` de `src/tests/_apoio.py` ajudam a montar o cenário).
 
 ## Proteção das views
 

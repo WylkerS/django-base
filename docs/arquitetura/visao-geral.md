@@ -23,6 +23,8 @@ flowchart LR
 
 No compose completo, o Nginx (`frontend-proxy`) publica a aplicação em `http://localhost:8001` (`APP_PORT`), encaminha as requisições para o Gunicorn na porta `8000` e serve os arquivos estáticos coletados no volume `static_files`. No compose de desenvolvimento, o navegador acessa diretamente o `runserver` do Django, exposto na mesma porta externa.
 
+O `docker-compose.test.yml` é um ambiente separado, usado somente pela suíte automatizada. Ele cria um runner Django e um PostgreSQL temporário, sem publicar portas nem participar do runtime de desenvolvimento ou produção. O runner executa as migrations e os testes e o Makefile remove containers, rede e volumes ao terminar.
+
 ## Aplicações Django
 
 Registradas em `src/config/settings.py` (`INSTALLED_APPS`), todas em `src/apps/` e importadas como `apps.<nome>` (o label Django continua o nome simples, ex. `core`):
@@ -65,7 +67,7 @@ projeto/                              # raiz do repositório (PROJECT_ROOT)
 │   │   │   └── migrations/
 │   │   └── theme/                    # app django-tailwind (static_src/ com o tema DaisyUI)
 │   ├── templates/                    # base.html, 403.html, partials/ e uma pasta por app
-│   ├── tests/                        # testes por app
+│   ├── tests/                        # testes por app e camada (unit/, integration/, e2e/) e _apoio.py
 │   └── static/                       # arquivos estáticos de origem
 ├── scripts/utils/                    # utilitários de desenvolvimento
 ├── docs/                             # esta documentação
@@ -73,6 +75,8 @@ projeto/                              # raiz do repositório (PROJECT_ROOT)
 ├── poetry.lock                       # versões reproduzíveis das dependências
 ├── docker-compose.yml                # ambiente completo (Gunicorn + Nginx + Celery)
 ├── docker-compose.dev.yml            # ambiente de desenvolvimento (autoreload + Tailwind watch)
+├── docker-compose.test.yml           # PostgreSQL efêmero e runner da suíte
+├── Makefile                          # atalhos de desenvolvimento, testes e validação
 ├── Dockerfile                        # imagem Python e build do frontend
 └── nginx.conf                        # proxy reverso e arquivos estáticos
 ```

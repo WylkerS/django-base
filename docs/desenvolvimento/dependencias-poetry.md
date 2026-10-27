@@ -58,7 +58,7 @@ poetry lock
 poetry check --lock
 ```
 
-O Dockerfile instala apenas o grupo `main`. Ao criar um grupo `dev`, ajuste explicitamente a imagem usada em desenvolvimento antes de depender da ferramenta dentro do container.
+O Dockerfile instala por padrão apenas o grupo `main` (argumento de build `POETRY_INSTALL_GROUPS=main`). O grupo `dev` (hoje, o Bandit) só entra na imagem da suíte: o `docker-compose.test.yml` constrói o runner com `POETRY_INSTALL_GROUPS=dev`, e o Dockerfile executa `poetry sync --with dev`. As imagens de desenvolvimento e implantação não recebem esse grupo; para usar uma ferramenta do `dev` em outro container, ajuste o argumento de build dele explicitamente.
 
 Evite `poetry update --lock` sem indicar um pacote, salvo quando o objetivo for atualizar todo o conjunto. Nunca edite `poetry.lock` manualmente e não instale pacotes em um container em execução.
 

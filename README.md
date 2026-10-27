@@ -8,8 +8,8 @@ O que já vem pronto:
 - app `core`: usuário customizado (`core.Usuario`), `Setor`, `Cargo`, login/logout, home, página 403 e a política de acesso por dados (`Setor.gestor_sistema` + `@gestor_requerido`);
 - app `theme`: Tailwind CSS 4 + DaisyUI 5 com um tema provisório, e o `base.html` com cabeçalho, navegação e mensagens;
 - Celery, Celery Beat (agendamentos no banco) e Flower;
-- Docker Compose de desenvolvimento (autoreload + Tailwind watch) e completo (Gunicorn + Nginx);
-- testes do `core` e a estrutura de `docs/` (arquitetura, segurança, desenvolvimento, operação, design system e catálogo de componentes).
+- Docker Compose de desenvolvimento (autoreload + Tailwind watch), completo (Gunicorn + Nginx) e de testes (PostgreSQL efêmero), com um `Makefile` de atalhos;
+- suíte de testes por camada (`unit`/`integration`/`e2e`, `make test`, Bandit) e a estrutura de `docs/` (arquitetura, segurança, desenvolvimento, operação, design system e catálogo de componentes).
 
 ## Tecnologias
 
@@ -121,8 +121,8 @@ docker compose -f docker-compose.dev.yml exec django-web python manage.py makemi
 # Aplicar migrations
 docker compose -f docker-compose.dev.yml exec django-web python manage.py migrate
 
-# Rodar os testes
-docker compose -f docker-compose.dev.yml exec django-web python manage.py test
+# Rodar os testes (no host; ambiente isolado, não exige o compose de dev ativo)
+make test
 
 # Encerrar mantendo os volumes
 docker compose -f docker-compose.dev.yml down
@@ -139,11 +139,13 @@ As dependências Python são declaradas em `pyproject.toml` e fixadas em `poetry
 | `src/apps/core/` | usuário (`core.Usuario`), setores, cargos, login/logout, home e política de acesso |
 | `src/apps/theme/` | front-end com Tailwind CSS / DaisyUI (tema `base`) |
 | `src/templates/` | templates compartilhados (`base.html`, `403.html`, `partials/`) e uma pasta por app |
-| `src/tests/` | testes automatizados, uma pasta por app |
+| `src/tests/` | testes automatizados por app e camada (`unit/`, `integration/`, `e2e/`) e helpers em `_apoio.py` |
 | `scripts/utils/` | utilitários de desenvolvimento (ex. `popular_banco.py`) |
 | `docs/` | documentação técnica ([índice](docs/README.md)) |
 | `Dockerfile` | imagem da aplicação (build do front-end + venv Poetry) |
 | `docker-compose.yml` | stack completa (Gunicorn + Nginx + Celery) |
 | `docker-compose.dev.yml` | stack de desenvolvimento (autoreload + Tailwind watch) |
+| `docker-compose.test.yml` | runner da suíte e PostgreSQL efêmero |
+| `Makefile` | atalhos de desenvolvimento, testes e validação (`make` lista todos) |
 | `nginx.conf` | proxy reverso e arquivos estáticos |
 | `AGENTS.md` | convenções para quem desenvolve (pessoas e agentes de IA) |

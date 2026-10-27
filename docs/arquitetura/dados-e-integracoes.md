@@ -12,6 +12,8 @@ O arquivo `src/config/settings.py` define um único alias de banco.
 
 O container `db` fornece o PostgreSQL. O volume `postgres_data` preserva os dados do compose completo; o compose de desenvolvimento usa `postgres_data_dev` para não misturar os ambientes. Os volumes recebem o prefixo `COMPOSE_PROJECT_NAME`, então cada projeto derivado tem os seus. Em desenvolvimento, a porta é publicada apenas em `127.0.0.1:${DB_PORT}` (padrão `5433`); no compose completo, o banco não é publicado no host.
 
+O `docker-compose.test.yml` inicia um PostgreSQL 17 separado para a suíte automatizada. O diretório de dados fica em `tmpfs`, nenhuma porta é publicada e o ambiente não cria volume persistente. O Django aplica as migrations, cria o banco lógico de testes e o remove ao final; o Makefile remove o container e a rede mesmo quando a execução falha ou é interrompida.
+
 As variáveis de conexão (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`) inicializam a imagem oficial do PostgreSQL e configuram o alias `default`. Dentro do Compose, `POSTGRES_HOST` deve ser `db` — nunca `localhost`.
 
 ## Autenticação

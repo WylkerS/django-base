@@ -21,6 +21,8 @@ cp .env.example .env
 
 Ao mudar `APP_PORT`, ajuste também `DJANGO_CSRF_TRUSTED_ORIGINS`.
 
+A suíte (`docker-compose.test.yml`) não lê o `.env`: o runner recebe configurações fixas de teste. O `Makefile` só lê `APP_IMAGE` dele, para nomear a imagem (`<APP_IMAGE>:test`, sobrescrevível com `TEST_IMAGE`) e o projeto Compose da suíte (`<APP_IMAGE>-test`, sobrescrevível com `TEST_PROJECT_NAME`).
+
 ## Django
 
 | Variável | Obrigatória | Descrição |
