@@ -14,6 +14,8 @@ RUN npm run build
 FROM python:3.14-slim AS builder
 
 ARG POETRY_VERSION=2.4.1
+# "main" na imagem da aplicação; o docker-compose.test.yml passa "dev" (Bandit e ferramentas de teste).
+ARG POETRY_INSTALL_GROUPS=main
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -28,7 +30,11 @@ RUN python -m venv "${VIRTUAL_ENV}" && \
     /usr/local/bin/python -m pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 COPY pyproject.toml poetry.lock ./
-RUN poetry sync --only main --no-root --no-ansi
+RUN if [ "${POETRY_INSTALL_GROUPS}" = "main" ]; then \
+        poetry sync --only main --no-root --no-ansi; \
+    else \
+        poetry sync --with "${POETRY_INSTALL_GROUPS}" --no-root --no-ansi; \
+    fi
 
 FROM python:3.14-slim
 

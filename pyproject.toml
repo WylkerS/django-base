@@ -28,3 +28,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.13"
+
+[dependency-groups]
+dev = [
+    "bandit (>=1.9.4,<2.0.0)"
+]
