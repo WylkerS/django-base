@@ -1,0 +1,55 @@
+# Ambiente exclusivo da suíte automatizada: runner Django e PostgreSQL efêmero (tmpfs, sem porta publicada).
+# Use pelo Makefile (make test, make bandit): ele define um nome de projeto próprio (-p <APP_IMAGE>-test)
+# e remove containers, rede e volumes ao terminar, sem tocar no ambiente de desenvolvimento.
+# Não depende do .env: o runner recebe só configurações locais de teste.
+
+services:
+  test-db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: projeto_base_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres-test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    restart: "no"
+
+  test-runner:
+    build:
+      context: .
+      args:
+        POETRY_INSTALL_GROUPS: dev
+    image: ${TEST_IMAGE:-${APP_IMAGE:-projeto-base}:test}
+    working_dir: /app/src
+    init: true
+    command: ["sh", "-c", "exec python manage.py test $${TEST_TARGET:-} --noinput"]
+    environment:
+      APP_NOME: Projeto Base
+      SECRET_KEY: test-only-secret-key
+      DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: testserver,localhost,test-runner
+      DJANGO_CSRF_TRUSTED_ORIGINS: http://testserver,http://localhost
+
+      POSTGRES_DB: projeto_base_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres-test
+      POSTGRES_HOST: test-db
+      POSTGRES_PORT: "5432"
+
+      EMAIL_HOST: localhost
+      EMAIL_PORT: "1025"
+      EMAIL_HOST_USER: ""
+      EMAIL_HOST_PASSWORD: ""
+      EMAIL_FROM: testes@example.invalid
+      CELERY_BROKER_URL: memory://
+      CELERY_RESULT_BACKEND: cache+memory://
+      TEST_TARGET: ${TEST_TARGET:-}
+    depends_on:
+      test-db:
+        condition: service_healthy
+    restart: "no"
