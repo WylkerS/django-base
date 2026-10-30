@@ -1,5 +1,6 @@
 # Ambiente de desenvolvimento: runserver com autoreload, Tailwind em watch, Celery worker e beat.
 # Nome do projeto, imagem e portas vêm do .env (COMPOSE_PROJECT_NAME, APP_IMAGE, APP_PORT...).
+# O PostgreSQL não sobe aqui: a aplicação aponta para um banco externo (POSTGRES_* no .env).
 
 x-django-service: &django-service
   build:
@@ -10,33 +11,21 @@ x-django-service: &django-service
     - .env
   volumes:
     - .:/app
+  # O PostgreSQL é externo (POSTGRES_HOST no .env). host.docker.internal permite apontar
+  # para um PostgreSQL instalado no próprio host, também no Linux.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 x-celery-service: &celery-service
   <<: *django-service
   init: true
   depends_on:
-    db:
-      condition: service_healthy
     redis:
       condition: service_healthy
     migrate:
       condition: service_completed_successfully
 
 services:
-  db:
-    image: postgres:17
-    env_file:
-      - .env
-    ports:
-      - "127.0.0.1:${DB_PORT:-5433}:5432"
-    volumes:
-      - postgres_data_dev:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7-alpine
     ports:
@@ -52,9 +41,6 @@ services:
   migrate:
     <<: *django-service
     command: python manage.py migrate --noinput
-    depends_on:
-      db:
-        condition: service_healthy
     restart: "no"
 
   tailwind:
@@ -77,8 +63,6 @@ services:
       - .:/app
       - tailwind_css_dev:/app/src/apps/theme/static/css/dist:ro
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       migrate:
@@ -109,7 +93,6 @@ services:
       - "127.0.0.1:${FLOWER_PORT:-5555}:5555"
 
 volumes:
-  postgres_data_dev:
   redis_data_dev:
   frontend_node_modules_dev:
   tailwind_css_dev:

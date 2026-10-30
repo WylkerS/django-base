@@ -1,6 +1,7 @@
 # Ambiente completo (implantação): Gunicorn atrás do Nginx, Celery worker e beat.
 # Nome do projeto, imagem e portas vêm do .env (COMPOSE_PROJECT_NAME, APP_IMAGE, APP_PORT...),
 # para que vários projetos derivados do base convivam na mesma máquina.
+# O PostgreSQL não sobe aqui: a aplicação aponta para um banco externo (POSTGRES_* no .env).
 
 x-django-service: &django-service
   build:
@@ -9,20 +10,12 @@ x-django-service: &django-service
   working_dir: /app/src
   env_file:
     - .env
+  # O PostgreSQL é externo (POSTGRES_HOST no .env). host.docker.internal permite apontar
+  # para um PostgreSQL instalado no próprio host, também no Linux.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 services:
-  db:
-    image: postgres:17
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     volumes:
@@ -36,9 +29,6 @@ services:
   migrate:
     <<: *django-service
     command: python manage.py migrate --noinput
-    depends_on:
-      db:
-        condition: service_healthy
 
   collectstatic:
     <<: *django-service
@@ -53,8 +43,6 @@ services:
   django-web:
     <<: *django-service
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       migrate:
@@ -74,8 +62,6 @@ services:
     <<: *django-service
     command: celery -A config worker -l info -Q celery
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       migrate:
@@ -88,8 +74,6 @@ services:
     profiles:
       - celery
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       migrate:
@@ -100,8 +84,6 @@ services:
     <<: *django-service
     command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       migrate:
@@ -135,6 +117,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   redis_data:
   static_files:
