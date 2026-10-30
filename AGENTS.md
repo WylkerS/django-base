@@ -23,7 +23,9 @@ Use sempre o ambiente Docker com atualização automática. Não execute Django,
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-A aplicação fica em `http://localhost:8001` (porta `APP_PORT` do `.env`). O compose de desenvolvimento executa PostgreSQL, Redis, migrations, Django com autoreload, Tailwind em modo watch, o worker Celery da fila `celery` e o Celery Beat; com `--profile celery`, também sobem o worker da fila `rpa` e o Flower. Worker e beat não recarregam sozinhos: reinicie-os (`docker compose -f docker-compose.dev.yml restart celery-worker celery-beat`) após alterar tasks ou os services que elas chamam.
+A aplicação fica em `http://localhost:8001` (porta `APP_PORT` do `.env`). O compose de desenvolvimento executa Redis, migrations, Django com autoreload, Tailwind em modo watch, o worker Celery da fila `celery` e o Celery Beat; com `--profile celery`, também sobem o worker da fila `rpa` e o Flower. Worker e beat não recarregam sozinhos: reinicie-os (`docker compose -f docker-compose.dev.yml restart celery-worker celery-beat`) após alterar tasks ou os services que elas chamam.
+
+Nenhum compose sobe banco de dados: a aplicação, as tasks e a suíte apontam para um PostgreSQL externo configurado pelas variáveis `POSTGRES_*` do `.env`.
 
 Comandos frequentes:
 
@@ -35,7 +37,7 @@ docker compose -f docker-compose.dev.yml exec django-web python manage.py migrat
 docker compose -f docker-compose.dev.yml exec django-web python manage.py createsuperuser
 docker compose -f docker-compose.dev.yml run --rm --no-deps tailwind sh -c "npm ci && npm run build"
 
-# Executar no host; a suíte usa runner e PostgreSQL efêmeros próprios (docker-compose.test.yml)
+# Executar no host; a suíte usa um runner próprio (docker-compose.test.yml) e cria test_<POSTGRES_DB> no banco externo
 make test
 make test-unit
 make test-integration
@@ -55,7 +57,7 @@ docker compose up --build -d
 
 Nele, como no de desenvolvimento, o worker da fila `celery` e o Celery Beat sobem sempre; o worker da fila `rpa` e o Flower só com `--profile celery`.
 
-Nome do projeto Compose, imagem e portas vêm do `.env` (`COMPOSE_PROJECT_NAME`, `APP_IMAGE`, `APP_PORT`, `DB_PORT`, `REDIS_PORT`, `FLOWER_PORT`). Não fixe `container_name` nos serviços: vários projetos derivados do base precisam conviver na mesma máquina.
+Nome do projeto Compose, imagem e portas vêm do `.env` (`COMPOSE_PROJECT_NAME`, `APP_IMAGE`, `APP_PORT`, `REDIS_PORT`, `FLOWER_PORT`). Não fixe `container_name` nos serviços: vários projetos derivados do base precisam conviver na mesma máquina.
 
 ## Aplicações e arquitetura
 
@@ -72,7 +74,7 @@ Organização de cada app de domínio: pacotes `models/`, `views/` e `admin/` co
 
 ## Banco de dados
 
-Um único alias `default` (PostgreSQL 17). <!-- PREENCHER: bases externas, se houver. -->
+Um único alias `default`: PostgreSQL 17 **externo**, apontado por `POSTGRES_*` no `.env`. Não acrescente serviço de banco aos arquivos Compose. <!-- PREENCHER: bases externas, se houver. -->
 
 As migrations ficam em `src/apps/<app>/migrations/` e são versionadas. O namespace Python `apps.<nome>` não altera o label Django do app: dependências e relações nas migrations usam labels simples como `core`. Crie migrations somente quando modelos Django forem alterados. Revise os arquivos gerados antes de aplicar. Não gere migrations vazias ou não relacionadas à tarefa. O serviço `migrate` do compose completo executa apenas `migrate --noinput`; gere e revise as migrations antes da implantação. Fluxo completo em [`docs/desenvolvimento/migrations.md`](docs/desenvolvimento/migrations.md).
 
@@ -129,7 +131,7 @@ Tasks vivem em `src/apps/<app>/tasks.py`, chamam `services/` e fecham as conexõ
 - crie `.env` a partir de `.env.example`;
 - `DEBUG` só é ativado pela string `True`;
 - `DJANGO_ALLOWED_HOSTS` e `DJANGO_CSRF_TRUSTED_ORIGINS` são listas separadas por vírgula, sem colchetes;
-- dentro do Compose, `POSTGRES_HOST` deve ser `db`;
+- `POSTGRES_HOST` aponta para o PostgreSQL externo (`host.docker.internal` para um banco no próprio host), nunca `localhost`;
 - `pyproject.toml` declara apenas as dependências diretas e `poetry.lock` fixa todo o ambiente;
 - use Poetry 2.4 e versione `pyproject.toml` e `poetry.lock` juntos;
 - use o Poetry no host apenas para editar e validar os arquivos (`poetry add --lock`, `poetry remove --lock`, `poetry check --lock`);
@@ -149,7 +151,7 @@ Execute conforme o escopo da mudança:
 docker compose -f docker-compose.dev.yml exec django-web python manage.py check
 docker compose -f docker-compose.dev.yml exec django-web python manage.py makemigrations --check --dry-run
 
-# No host; a suíte e o Bandit usam runner e PostgreSQL efêmeros próprios
+# No host; a suíte e o Bandit usam um runner próprio; a suíte cria test_<POSTGRES_DB> no banco externo
 make test
 make bandit
 
@@ -189,7 +191,7 @@ Também verifique:
 - `src/tests/`: suíte automatizada organizada por app e camada (`unit`, `integration`, `e2e`); `src/tests/_apoio.py`: helpers compartilhados;
 - `docker-compose.yml`: ambiente completo;
 - `docker-compose.dev.yml`: desenvolvimento com autoreload;
-- `docker-compose.test.yml`: runner Django e PostgreSQL efêmero da suíte;
+- `docker-compose.test.yml`: runner Django da suíte (banco externo do `.env`);
 - `Makefile`: atalhos de desenvolvimento, testes (`make test`), Bandit e validação;
 - `docs/desenvolvimento/testes.md`: camadas, helpers e execução da suíte;
 - `docs/arquitetura/camadas-e-padroes-de-codigo.md`: regras de models, services, selectors e views;

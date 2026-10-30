@@ -43,7 +43,7 @@ Importe com `from tests._apoio import login, criar_gestor`. Acrescente aqui um h
 
 ## Execução
 
-Execute os comandos no host. O Makefile constrói o runner e o PostgreSQL exclusivos de teste:
+Execute os comandos no host. O Makefile constrói o runner exclusivo de teste, que usa o PostgreSQL externo do `.env`:
 
 ```bash
 # Suíte completa
@@ -70,11 +70,11 @@ O target `make bandit` executa o Bandit (grupo Poetry `dev`) no mesmo container 
 
 Sem `make` disponível, o equivalente é `docker compose -f docker-compose.test.yml -p <APP_IMAGE>-test up --build --abort-on-container-exit --exit-code-from test-runner`, seguido de `docker compose -f docker-compose.test.yml -p <APP_IMAGE>-test down --volumes --remove-orphans`. Sempre informe `-p`: sem ele, o Compose usa o `COMPOSE_PROJECT_NAME` do `.env`, que é o do ambiente de desenvolvimento, e o `--remove-orphans` derrubaria os containers de dev.
 
-## Banco temporário e limpeza
+## Banco de testes e limpeza
 
-O `docker-compose.test.yml` inicia um PostgreSQL 17 sem porta publicada e guarda os dados em `tmpfs`. O runner é construído com `POETRY_INSTALL_GROUPS=dev` (inclui o Bandit), aguarda o healthcheck do banco e executa `python manage.py test --noinput` com configurações locais, sem depender do `.env` nem do ambiente de desenvolvimento. O broker do Celery é `memory://` e o Django troca o backend de e-mail por `locmem` durante os testes.
+O `docker-compose.test.yml` não sobe banco: o runner se conecta ao mesmo PostgreSQL externo do projeto, pelas variáveis `POSTGRES_*` do `.env` (sobrescrevíveis no shell, ex. `POSTGRES_HOST=outro-servidor make test`). O usuário precisa de permissão `CREATEDB`. O runner é construído com `POETRY_INSTALL_GROUPS=dev` (inclui o Bandit) e executa `python manage.py test --noinput`; as demais configurações são locais de teste, sem depender do restante do `.env` nem do ambiente de desenvolvimento. O broker do Celery é `memory://` e o Django troca o backend de e-mail por `locmem` durante os testes.
 
-Durante a execução, o Django aplica as migrations, cria o banco lógico de testes e o remove ao terminar. O Makefile é responsável pelo ciclo do Compose: usa um projeto próprio (`<APP_IMAGE>-test`, sobrescrevível com `TEST_PROJECT_NAME`) e sempre executa `down --volumes --remove-orphans` e remove a imagem `<APP_IMAGE>:test` (`TEST_IMAGE`), inclusive após falha ou interrupção. Assim, a suíte não depende de `django-web` ativo nem utiliza o PostgreSQL de desenvolvimento, e vários projetos derivados do base podem rodar a suíte na mesma máquina.
+Durante a execução, o Django cria o banco `test_<POSTGRES_DB>` no servidor, aplica as migrations nele e o remove ao terminar; o banco `POSTGRES_DB` do projeto não é tocado. Se uma execução interrompida deixar o `test_<POSTGRES_DB>` para trás, a próxima o recria (`--noinput`). O Makefile é responsável pelo ciclo do Compose: usa um projeto próprio (`<APP_IMAGE>-test`, sobrescrevível com `TEST_PROJECT_NAME`) e sempre executa `down --volumes --remove-orphans` e remove a imagem `<APP_IMAGE>:test` (`TEST_IMAGE`), inclusive após falha ou interrupção. Assim, a suíte não depende de `django-web` ativo, e vários projetos derivados do base podem rodar a suíte na mesma máquina (cada um com seu `POSTGRES_DB`).
 
 Em CI, defina `TEST_PROJECT_NAME` e `TEST_IMAGE` com o identificador da execução (ex. `projeto-base-test-${{ github.run_id }}`) para que jobs simultâneos não colidam.
 

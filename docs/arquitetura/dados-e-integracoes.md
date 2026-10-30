@@ -10,11 +10,11 @@ O arquivo `src/config/settings.py` define um único alias de banco.
 
 <!-- PREENCHER: se o projeto consumir bases externas (SQL Server, APIs), acrescente aliases/integrações aqui e em settings.py. -->
 
-O container `db` fornece o PostgreSQL. O volume `postgres_data` preserva os dados do compose completo; o compose de desenvolvimento usa `postgres_data_dev` para não misturar os ambientes. Os volumes recebem o prefixo `COMPOSE_PROJECT_NAME`, então cada projeto derivado tem os seus. Em desenvolvimento, a porta é publicada apenas em `127.0.0.1:${DB_PORT}` (padrão `5433`); no compose completo, o banco não é publicado no host.
+O PostgreSQL é **externo**: nenhum arquivo Compose sobe um serviço de banco. Desenvolvimento, implantação e suíte apontam para o servidor configurado pelas variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST` e `POSTGRES_PORT`, que configuram o alias `default`. `POSTGRES_HOST` é um PostgreSQL externo (hostname ou IP do servidor; `host.docker.internal` para um PostgreSQL instalado no próprio host) — nunca `localhost`, que dentro do container é o próprio container. Os serviços Django recebem `extra_hosts: host.docker.internal:host-gateway`, para que esse nome funcione também no Linux.
 
-O `docker-compose.test.yml` inicia um PostgreSQL 17 separado para a suíte automatizada. O diretório de dados fica em `tmpfs`, nenhuma porta é publicada e o ambiente não cria volume persistente. O Django aplica as migrations, cria o banco lógico de testes e o remove ao final; o Makefile remove o container e a rede mesmo quando a execução falha ou é interrompida.
+Backup, retenção e criação do banco e do usuário ficam a cargo de quem administra o servidor PostgreSQL. Projetos derivados do base usam bancos (`POSTGRES_DB`) distintos.
 
-As variáveis de conexão (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`) inicializam a imagem oficial do PostgreSQL e configuram o alias `default`. Dentro do Compose, `POSTGRES_HOST` deve ser `db` — nunca `localhost`.
+O `docker-compose.test.yml` também não sobe banco: a suíte cria `test_<POSTGRES_DB>` no mesmo servidor, aplica as migrations e o remove ao final (o usuário precisa de `CREATEDB`); o Makefile remove o container e a rede mesmo quando a execução falha ou é interrompida.
 
 ## Autenticação
 

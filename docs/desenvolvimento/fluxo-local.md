@@ -19,13 +19,14 @@ docker compose -f docker-compose.dev.yml --profile celery up --build
 
 O worker e o beat não têm autoreload: depois de alterar uma task ou um service chamado por ela, reinicie-os com `docker compose -f docker-compose.dev.yml restart celery-worker celery-beat` (ou `make restart`).
 
-O compose de desenvolvimento utiliza diretamente o arquivo `.env`. Para funcionar dentro da rede Docker, confirme especialmente:
+O compose de desenvolvimento utiliza diretamente o arquivo `.env` e não sobe banco: a aplicação aponta para um PostgreSQL externo. Para funcionar dentro da rede Docker, confirme especialmente:
 
 ```dotenv
 DEBUG=True
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,django-web
 DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:8001,http://127.0.0.1:8001
-POSTGRES_HOST=db
+# Servidor do PostgreSQL externo; host.docker.internal = PostgreSQL instalado no próprio host
+POSTGRES_HOST=host.docker.internal
 POSTGRES_PORT=5432
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -59,7 +60,6 @@ Os comandos `check`, `migrate`, `makemigrations`, `migrations-check`, `createsup
 
 | Serviço | Função | Porta no host (padrão) | Tipo |
 | --- | --- | --- | --- |
-| `db` | PostgreSQL em volume de desenvolvimento | `127.0.0.1:5433` (`DB_PORT`) | contínuo |
 | `redis` | broker e resultados do Celery | `127.0.0.1:6379` (`REDIS_PORT`) | contínuo |
 | `migrate` | aplica as migrations existentes | — | execução única |
 | `tailwind` | `npm ci` + PostCSS/Tailwind em modo watch | — | contínuo |
@@ -105,7 +105,7 @@ docker compose -f docker-compose.dev.yml exec django-web python manage.py shell
 
 ## Testes
 
-A suíte usa um Compose exclusivo (`docker-compose.test.yml`), com PostgreSQL temporário, e não exige que o ambiente de desenvolvimento esteja ativo:
+A suíte usa um Compose exclusivo (`docker-compose.test.yml`), que cria o banco temporário `test_<POSTGRES_DB>` no PostgreSQL externo e não exige que o ambiente de desenvolvimento esteja ativo:
 
 ```bash
 # Suíte completa
@@ -167,4 +167,4 @@ Não duplique regras de acesso nas views — a checagem sempre passa por `src/ap
 docker compose -f docker-compose.dev.yml down
 ```
 
-Os volumes são preservados. `docker compose -f docker-compose.dev.yml down -v` apaga banco e Redis de desenvolvimento — use apenas quando quiser recriar o ambiente do zero.
+Os volumes são preservados. `docker compose -f docker-compose.dev.yml down -v` apaga o Redis e o `node_modules` de desenvolvimento (o banco externo não é afetado) — use apenas quando quiser recriar o ambiente do zero.

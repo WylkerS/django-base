@@ -15,13 +15,12 @@ cp .env.example .env
 | `COMPOSE_PROJECT_NAME` | nome da pasta | prefixo de containers, volumes e rede do Compose — use um valor único por projeto |
 | `APP_IMAGE` | `projeto-base` | nome da imagem Docker (`:dev` no desenvolvimento, `:latest` no completo) |
 | `APP_PORT` | `8001` | porta da aplicação no host (Nginx no completo, `runserver` no dev) |
-| `DB_PORT` | `5433` | porta do PostgreSQL no host (só dev, em `127.0.0.1`) |
 | `REDIS_PORT` | `6379` | porta do Redis no host (só dev, em `127.0.0.1`) |
 | `FLOWER_PORT` | `5555` | porta do Flower no host (profile `celery`) |
 
 Ao mudar `APP_PORT`, ajuste também `DJANGO_CSRF_TRUSTED_ORIGINS`.
 
-A suíte (`docker-compose.test.yml`) não lê o `.env`: o runner recebe configurações fixas de teste. O `Makefile` só lê `APP_IMAGE` dele, para nomear a imagem (`<APP_IMAGE>:test`, sobrescrevível com `TEST_IMAGE`) e o projeto Compose da suíte (`<APP_IMAGE>-test`, sobrescrevível com `TEST_PROJECT_NAME`).
+A suíte (`docker-compose.test.yml`) lê do `.env` só as variáveis `POSTGRES_*` (sobrescrevíveis no shell); as demais configurações do runner são fixas de teste. O `Makefile` só lê `APP_IMAGE` dele, para nomear a imagem (`<APP_IMAGE>:test`, sobrescrevível com `TEST_IMAGE`) e o projeto Compose da suíte (`<APP_IMAGE>-test`, sobrescrevível com `TEST_PROJECT_NAME`).
 
 ## Django
 
@@ -42,13 +41,15 @@ DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:8001,http://127.0.0.1:8001
 
 ## PostgreSQL principal
 
+O banco é externo: nenhum arquivo Compose sobe PostgreSQL. As mesmas variáveis servem ao desenvolvimento, à implantação e à suíte.
+
 | Variável | Descrição |
 | --- | --- |
-| `POSTGRES_DB` | nome do banco criado pelo container |
-| `POSTGRES_USER` | usuário do banco |
+| `POSTGRES_DB` | nome do banco do projeto, já existente no servidor |
+| `POSTGRES_USER` | usuário do banco; precisa de `CREATEDB` para a suíte criar e remover `test_<POSTGRES_DB>` |
 | `POSTGRES_PASSWORD` | senha do banco |
-| `POSTGRES_HOST` | use `db` dentro do Compose (padrão do código: `localhost`) |
-| `POSTGRES_PORT` | normalmente `5432` (porta interna da rede Docker) |
+| `POSTGRES_HOST` | servidor do banco: hostname ou IP; `host.docker.internal` para um PostgreSQL no próprio host. Não use `localhost` (padrão do código fora do Compose) |
+| `POSTGRES_PORT` | porta do servidor, normalmente `5432` |
 
 ## SMTP
 

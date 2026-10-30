@@ -6,7 +6,7 @@
 - Docker Engine ou Docker Desktop;
 - Docker Compose v2, disponível pelo comando `docker compose`.
 
-Não é necessário instalar Python, Node.js, PostgreSQL ou Redis diretamente na máquina. O Poetry no host é usado somente para alterar `pyproject.toml` e `poetry.lock`.
+Não é necessário instalar Python, Node.js ou Redis diretamente na máquina. O PostgreSQL é externo: nenhum compose sobe banco, e é preciso um servidor PostgreSQL 17 acessível pelos containers. O Poetry no host é usado somente para alterar `pyproject.toml` e `poetry.lock`.
 
 Para desenvolvimento, o fluxo recomendado é `docker-compose.dev.yml`, descrito em [Desenvolvimento com Docker Compose](../desenvolvimento/fluxo-local.md). O `docker-compose.yml` completo desta página representa o ambiente integrado usado em implantação.
 
@@ -30,7 +30,7 @@ Revise pelo menos:
 - `APP_NOME`, `COMPOSE_PROJECT_NAME`, `APP_IMAGE` e `APP_PORT`;
 - `SECRET_KEY` e `DEBUG` (`False` em produção);
 - `DJANGO_ALLOWED_HOSTS` e `DJANGO_CSRF_TRUSTED_ORIGINS`;
-- credenciais do PostgreSQL principal (`POSTGRES_*`, com `POSTGRES_HOST=db`);
+- conexão com o PostgreSQL externo (`POSTGRES_*`; `POSTGRES_HOST` é um PostgreSQL externo (hostname ou IP do servidor; `host.docker.internal` para um PostgreSQL instalado no próprio host) — nunca `localhost`, que dentro do container é o próprio container);
 - SMTP (`EMAIL_*`);
 - credenciais do Flower (`FLOWER_USER`, `FLOWER_PASSWORD`).
 
@@ -45,7 +45,7 @@ docker compose up --build -d
 
 Na primeira inicialização, o Docker:
 
-1. cria o PostgreSQL e o Redis (com healthcheck);
+1. cria o Redis (com healthcheck); o PostgreSQL já deve existir e estar acessível;
 2. compila o frontend e sincroniza `poetry.lock` em `/opt/venv` durante o build da imagem;
 3. executa `migrate` pelo serviço `migrate`;
 4. executa `collectstatic` e preenche o volume `static_files`;
@@ -83,7 +83,6 @@ Acesse:
 
 | Serviço | Função | Porta no host (padrão) | Tipo |
 | --- | --- | --- | --- |
-| `db` | PostgreSQL principal | — (só rede interna) | contínuo |
 | `redis` | broker e resultados do Celery | — (só rede interna) | contínuo |
 | `migrate` | migrations do Django | — | execução única |
 | `collectstatic` | coleta de arquivos estáticos no volume `static_files` | — | execução única |
@@ -115,7 +114,7 @@ docker compose up --build -d
 docker compose down
 ```
 
-`docker compose down -v` também remove os volumes (`postgres_data`, `redis_data`, `static_files`) e, portanto, apaga o PostgreSQL e demais dados persistidos. Use apenas quando a intenção for recriar completamente o ambiente.
+`docker compose down -v` também remove os volumes (`redis_data`, `static_files`). O banco é externo e não é afetado. Use apenas quando a intenção for recriar completamente o ambiente.
 
 ## Poetry e atualização das dependências
 

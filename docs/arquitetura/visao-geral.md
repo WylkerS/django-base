@@ -12,7 +12,7 @@ Projeto Django dividido em apps de domínio, PostgreSQL, tarefas assíncronas em
 flowchart LR
     U[Usuário] --> N[Nginx :8001]
     N --> D[Django / Gunicorn :8000]
-    D --> P[(PostgreSQL principal)]
+    D --> P[(PostgreSQL externo)]
     D --> E[Servidor SMTP]
     D --> B[Redis]
     B --> C[Workers Celery]
@@ -23,7 +23,7 @@ flowchart LR
 
 No compose completo, o Nginx (`frontend-proxy`) publica a aplicação em `http://localhost:8001` (`APP_PORT`), encaminha as requisições para o Gunicorn na porta `8000` e serve os arquivos estáticos coletados no volume `static_files`. No compose de desenvolvimento, o navegador acessa diretamente o `runserver` do Django, exposto na mesma porta externa.
 
-O `docker-compose.test.yml` é um ambiente separado, usado somente pela suíte automatizada. Ele cria um runner Django e um PostgreSQL temporário, sem publicar portas nem participar do runtime de desenvolvimento ou produção. O runner executa as migrations e os testes e o Makefile remove containers, rede e volumes ao terminar.
+O `docker-compose.test.yml` é um ambiente separado, usado somente pela suíte automatizada. Ele cria apenas um runner Django, sem publicar portas nem participar do runtime de desenvolvimento ou produção. O runner cria `test_<POSTGRES_DB>` no PostgreSQL externo, executa as migrations e os testes, e o Makefile remove containers, rede e volumes ao terminar.
 
 ## Aplicações Django
 
@@ -75,7 +75,7 @@ projeto/                              # raiz do repositório (PROJECT_ROOT)
 ├── poetry.lock                       # versões reproduzíveis das dependências
 ├── docker-compose.yml                # ambiente completo (Gunicorn + Nginx + Celery)
 ├── docker-compose.dev.yml            # ambiente de desenvolvimento (autoreload + Tailwind watch)
-├── docker-compose.test.yml           # PostgreSQL efêmero e runner da suíte
+├── docker-compose.test.yml           # runner da suíte (banco externo)
 ├── Makefile                          # atalhos de desenvolvimento, testes e validação
 ├── Dockerfile                        # imagem Python e build do frontend
 └── nginx.conf                        # proxy reverso e arquivos estáticos
@@ -88,7 +88,7 @@ Organização de cada app de domínio: pacotes `models/`, `views/` e `admin/` co
 - Python 3.14 nas imagens Docker (`pyproject.toml` exige `>=3.13`).
 - Poetry 2.4 no estágio de build; virtualenv de execução em `/opt/venv`.
 - Django 5.2.
-- PostgreSQL 17 no compose.
+- PostgreSQL 17 externo (nenhum compose sobe banco).
 - Celery 5.6, Redis 7, `django-celery-beat` 2.9 e Flower 2.1.
 - Gunicorn e Nginx no ambiente completo.
 - Tailwind CSS 4 e DaisyUI 5 via `django-tailwind` 4.5.

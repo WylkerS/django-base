@@ -33,7 +33,7 @@ Depois, execute a suíte no ambiente isolado, a partir do host:
 make test
 ```
 
-O `make test` usa o Compose efêmero e um PostgreSQL vazio. O runner aplica toda a cadeia versionada, deixa o Django criar e remover o banco lógico de testes e, ao terminar, o Makefile remove o container e os volumes temporários. Esse ciclo valida migrations sem alterar o PostgreSQL de desenvolvimento.
+O `make test` usa o runner efêmero e cria, no PostgreSQL externo, o banco vazio `test_<POSTGRES_DB>`. O runner aplica toda a cadeia versionada nele, o Django o remove ao final e o Makefile remove o container. Esse ciclo valida migrations sem alterar o banco do projeto.
 
 Os atalhos `make makemigrations`, `make migrations-check` e `make migrate` (com `APP_LABEL=<app>` opcional) equivalem aos comandos acima.
 
@@ -46,7 +46,7 @@ Os apps são importados como `apps.<nome>`, mas preservam labels Django simples.
 Até existir uma CI, execute manualmente no ambiente Docker:
 
 1. `makemigrations --check --dry-run` (`make migrations-check`), que não deve detectar alterações;
-2. `migrate --noinput`, aplicando toda a cadeia (a suíte `make test` também faz isso em PostgreSQL descartável);
+2. `migrate --noinput`, aplicando toda a cadeia (a suíte `make test` também faz isso no banco descartável `test_<POSTGRES_DB>`);
 3. `manage.py check` (`make check`);
 4. a suíte completa com `make test`.
 
@@ -64,10 +64,9 @@ Gere e revise as migrations antes da implantação; o deploy nunca executa `make
 
 O base traz `core/0001_initial.py`, que cria `core.Usuario` (usuário customizado, `AUTH_USER_MODEL`), `Setor` (com `gestor_sistema`) e `Cargo` desde o início. Como `AUTH_USER_MODEL` não pode ser trocado depois da primeira migration, **não** remova o `core.Usuario`: acrescente campos a ele quando precisar.
 
-Para recriar o banco de desenvolvimento do zero (apaga os dados de dev):
+O banco é externo, então `docker compose down -v` não o recria. Para recomeçar do zero em desenvolvimento, apague e recrie o banco `POSTGRES_DB` no servidor PostgreSQL e depois:
 
 ```bash
-docker compose -f docker-compose.dev.yml down -v
 docker compose -f docker-compose.dev.yml up --build
 docker compose -f docker-compose.dev.yml exec django-web python manage.py createsuperuser
 ```

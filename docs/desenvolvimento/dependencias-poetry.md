@@ -96,4 +96,4 @@ Revise e versione `pyproject.toml` e `poetry.lock` juntos. Se um módulo usado d
 docker compose up -d --build --remove-orphans
 ```
 
-Não use `docker compose down -v` para atualizar dependências: isso remove volumes e apaga o PostgreSQL.
+Não use `docker compose down -v` para atualizar dependências: isso remove volumes (Redis e estáticos) sem necessidade.
