@@ -1,4 +1,16 @@
+# Shell POSIX das receitas (trap, true, sed, tr). No Windows não existe /bin/sh:
+# usa o sh.exe do Git for Windows e põe a pasta dele no PATH (true, sed, tr etc.).
+# Caminho curto (Progra~1) evita problemas com o espaço de "Program Files".
+ifeq ($(OS),Windows_NT)
+GIT_USR_BIN ?= C:/Progra~1/Git/usr/bin
+ifeq ($(wildcard $(GIT_USR_BIN)/sh.exe),)
+$(error Git for Windows nao encontrado em $(GIT_USR_BIN). Instale o Git for Windows, rode o make pelo Git Bash/WSL ou informe GIT_USR_BIN=<pasta usr/bin do Git>)
+endif
+SHELL := $(GIT_USR_BIN)/sh.exe
+export PATH := $(GIT_USR_BIN);$(PATH)
+else
 SHELL := /bin/sh
+endif
 
 # Nome da imagem lido do .env (APP_IMAGE); identifica a imagem e o projeto Compose da suíte.
 APP_IMAGE ?= $(or $(shell sed -n 's/^APP_IMAGE=//p' .env 2>/dev/null | tr -d '\r'),projeto-base)
