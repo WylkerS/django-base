@@ -54,6 +54,20 @@ O `Makefile` da raiz encurta os comandos do Compose. Execute-os no host (exige `
 | `make compose-check` | `config --quiet` dos três arquivos Compose |
 | `make validate` | Compose, Poetry, check, migrations, suíte e build do Tailwind |
 
+### Usar o Makefile no Windows
+
+O `Makefile` detecta o Windows (`OS=Windows_NT`) e usa automaticamente o `sh.exe` do Git for Windows (`C:\Program Files\Git\usr\bin`), colocando essa pasta no `PATH`; no Linux/macOS nada muda. Pré-requisitos: `make` instalado, Git for Windows e o Docker Desktop aberto (com o engine em execução).
+
+```powershell
+make test
+make test TEST_TARGET=tests.core
+make test TEST_TARGET=tests.core.unit
+```
+
+- Se o Git estiver em outra pasta, informe `make test GIT_USR_BIN=D:/Git/usr/bin`. Sem o Git, o `make` para com uma mensagem explicando.
+- Fallback: rode o `make` pelo Git Bash ou pelo WSL (com a integração do Docker Desktop ativada).
+- Erros como "O sistema não pode encontrar o caminho" ou "'true' não é reconhecido" indicam que o `make` não está usando um shell POSIX.
+
 Os comandos `check`, `migrate`, `makemigrations`, `migrations-check`, `createsuperuser` e `shell` usam `exec` e exigem o ambiente de desenvolvimento em execução; `test`, `bandit` e `tailwind-build` não. Ao acrescentar um serviço contínuo ao `docker-compose.dev.yml`, inclua-o em `APP_SERVICES` (ou `CELERY_SERVICES`) no `Makefile`.
 
 ## Serviços do compose de desenvolvimento
